@@ -1,0 +1,11 @@
+{
+  "name": "changelog-release-action",
+  "private": true,
+  "description": "Read the version bump from CHANGELOG.md, stamp the release section, wait for npm to serve it, and extract its release notes",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "preflight": "node --test"
+  }
+}

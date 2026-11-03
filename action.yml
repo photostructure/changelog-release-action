@@ -1,0 +1,33 @@
+name: Changelog Release
+description: Read the version bump from CHANGELOG.md, stamp the release section, wait for npm to serve it, and extract its release notes
+author: PhotoStructure
+
+branding:
+  icon: book-open
+  color: blue
+
+inputs:
+  command:
+    description: >-
+      bump: read the bump from the Unreleased heading in ./CHANGELOG.md.
+      stamp: rename that heading to the tag's version and today's UTC date.
+      wait-for-npm: wait until npm serves the package at the tag's version.
+      notes: write the tag's CHANGELOG.md section to a file.
+    required: true
+  tag:
+    description: The release tag, such as v1.2.3. A leading "v" is dropped to get the version. Required by stamp, wait-for-npm, and notes.
+    required: false
+  token:
+    description: Token that reads package.json (wait-for-npm) and CHANGELOG.md (notes) at the workflow commit.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  bump:
+    description: patch, minor, or major (bump).
+  notes-file:
+    description: Path of the file holding the tag's release notes (notes).
+
+runs:
+  using: node24
+  main: index.mjs
