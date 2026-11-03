@@ -8,9 +8,12 @@ A GitHub Action that drives PhotoStructure's npm release workflows from
    so starting a release asks no questions.
 2. The release job bumps the version, then renames that heading to
    `## [X.Y.Z] - YYYY-MM-DD` in the signed release commit.
-3. After the maintainer approves the staged package on npm, the publish job
-   creates the GitHub release with that section above GitHub's generated
-   notes.
+3. The publish job stages the package on npm, then keeps running: it checks
+   npm every 10 to 30 minutes, for up to 5 hours 25 minutes, for the new
+   version.
+4. The maintainer reviews the staged package and approves it with 2FA. At its
+   next check, the publish job finds the version on npm and creates the
+   GitHub release, with that section above GitHub's generated notes.
 
 GitHub emails watchers the release body when the release is published, and
 later edits send no new email. That is why the GitHub release waits for npm,
