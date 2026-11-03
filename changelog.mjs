@@ -5,9 +5,10 @@ import { execFile } from "node:child_process";
 
 export const BUMPS = ["patch", "minor", "major"];
 
-// Minutes to sleep before each `npm view`. npm validates a staged package for
-// 10-30 minutes before the maintainer can approve it. The waits total 325
-// minutes; GitHub stops a job at 360.
+// Minutes to sleep before each `npm view`. The first wait is 10 minutes because
+// npm validates every staged package before the maintainer can approve it, and
+// that validation takes 5 to 20 minutes, so an earlier check cannot find the
+// version. The waits total 325 minutes; GitHub stops a job at 360.
 export const NPM_WAIT_MINUTES = [
   10, 10, 15, 20, 30, 30, 30, 30, 30, 30, 30, 30, 30,
 ];
