@@ -5,7 +5,6 @@ import { delimiter, join } from "node:path";
 import process from "node:process";
 import { afterEach, beforeEach, describe, test } from "node:test";
 import {
-  NPM_WAIT_MINUTES,
   ReleaseError,
   npmView,
   readUnreleased,
@@ -199,32 +198,35 @@ describe("releaseNotes", () => {
 });
 
 describe("waitForNpm", () => {
+  // `sleep` advances the clock that `now` reads, and `viewedAt` records the
+  // minute of each `npm view` after `start`. `view` answers from `results`,
+  // then E404. The clock starts at a real epoch time so a deadline that leaves
+  // out the start time fails.
   function fakes(results) {
-    const slept = [];
+    const start = Date.UTC(2026, 10, 4);
+    let ms = start;
     const viewed = [];
+    const viewedAt = [];
     return {
-      slept,
       viewed,
-      sleep: async (ms) => slept.push(ms / 60_000),
+      viewedAt,
+      now: () => ms,
+      sleep: async (wait) => {
+        ms += wait;
+      },
       view: async (spec) => {
         viewed.push(spec);
-        return results.shift();
+        viewedAt.push((ms - start) / 60_000);
+        return results.shift() ?? NOT_YET;
       },
     };
   }
   const NOT_YET = { ok: false, stderr: "npm error code E404\n" };
 
-  test("the waits total the 325 minutes README.md documents", () => {
-    assert.equal(
-      NPM_WAIT_MINUTES.reduce((a, b) => a + b),
-      325,
-    );
-  });
-
   test("returns once npm serves the version", async () => {
     const f = fakes([NOT_YET, NOT_YET, { ok: true, stderr: "" }]);
     await waitForNpm("pkg@1.2.3", f);
-    assert.deepEqual(f.slept, [10, 10, 15]);
+    assert.deepEqual(f.viewedAt, [5, 10, 15]);
     assert.deepEqual(f.viewed, ["pkg@1.2.3", "pkg@1.2.3", "pkg@1.2.3"]);
   });
 
@@ -243,8 +245,8 @@ describe("waitForNpm", () => {
     assert.equal(f.viewed.length, 2);
   });
 
-  test("tells the maintainer to approve and re-run after the last wait", async () => {
-    const f = fakes(NPM_WAIT_MINUTES.map(() => NOT_YET));
+  test("checks every 5 minutes until the 345 minutes README.md documents, then tells the maintainer to approve and re-run", async () => {
+    const f = fakes([]);
     await assert.rejects(waitForNpm("pkg@1.2.3", f), (error) => {
       assert.ok(error instanceof ReleaseError);
       assert.equal(
@@ -253,7 +255,10 @@ describe("waitForNpm", () => {
       );
       return true;
     });
-    assert.deepEqual(f.slept, NPM_WAIT_MINUTES);
+    assert.deepEqual(
+      f.viewedAt,
+      Array.from({ length: 69 }, (_, i) => 5 * (i + 1)),
+    );
   });
 });
 

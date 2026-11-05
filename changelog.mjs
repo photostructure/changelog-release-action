@@ -5,13 +5,15 @@ import { execFile } from "node:child_process";
 
 export const BUMPS = ["patch", "minor", "major"];
 
-// Minutes to sleep before each `npm view`. The first wait is 10 minutes because
-// npm validates every staged package before the maintainer can approve it, and
-// that validation takes 5 to 20 minutes, so an earlier check cannot find the
-// version. The waits total 325 minutes; GitHub stops a job at 360.
-export const NPM_WAIT_MINUTES = [
-  10, 10, 15, 20, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-];
+// Minutes to sleep before each `npm view`, so the GitHub release follows npm
+// approval by at most this long. The job holds its runner for the whole wait,
+// so checking less often saves nothing.
+const NPM_CHECK_MINUTES = 5;
+
+// Minutes after which `waitForNpm` starts no new sleep. The last sleep can end
+// up to 5 minutes later, so the wait ends by about minute 350, which leaves at
+// least 10 of GitHub's 360-minute job limit for the job's other steps.
+const NPM_WAIT_LIMIT_MINUTES = 345;
 
 const HEADINGS =
   '"## [Unreleased (patch)]", "## [Unreleased (minor)]", or "## [Unreleased (major)]"';
@@ -166,10 +168,11 @@ export function releaseNotes(text, version) {
 }
 
 // Sleeps, then asks npm for `spec`, until npm serves it. `view` resolves to
-// { ok, stderr }; `sleep` takes milliseconds.
-export async function waitForNpm(spec, { view, sleep }) {
-  for (const minutes of NPM_WAIT_MINUTES) {
-    await sleep(minutes * 60_000);
+// { ok, stderr }; `sleep` takes milliseconds; `now` returns epoch milliseconds.
+export async function waitForNpm(spec, { view, sleep, now }) {
+  const deadline = now() + NPM_WAIT_LIMIT_MINUTES * 60_000;
+  while (now() < deadline) {
+    await sleep(NPM_CHECK_MINUTES * 60_000);
     const { ok, stderr } = await view(spec);
     if (ok) return;
     // The annotation shows only the message, so the message carries the fix.

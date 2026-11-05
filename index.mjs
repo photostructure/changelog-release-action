@@ -114,7 +114,11 @@ const commands = {
   async "wait-for-npm"() {
     const tag = requiredInput("tag", "wait-for-npm");
     const { name } = JSON.parse(await fetchAtWorkflowCommit("package.json"));
-    await waitForNpm(`${name}@${versionOf(tag)}`, { view: npmView, sleep });
+    await waitForNpm(`${name}@${versionOf(tag)}`, {
+      view: npmView,
+      sleep,
+      now: Date.now,
+    });
   },
 
   async notes() {

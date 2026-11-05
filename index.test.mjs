@@ -258,7 +258,7 @@ describe("notes", () => {
   });
 });
 
-// A successful run sleeps 10 minutes before its first `npm view`, so these
+// A successful run sleeps 5 minutes before its first `npm view`, so these
 // cover only what happens before that. changelog.test.mjs covers the loop and
 // npmView.
 describe("wait-for-npm", () => {

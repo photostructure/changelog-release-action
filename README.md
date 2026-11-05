@@ -9,8 +9,7 @@ A GitHub Action that drives PhotoStructure's npm release workflows from
 2. The release job bumps the version, then renames that heading to
    `## [X.Y.Z] - YYYY-MM-DD` in the signed release commit.
 3. The publish job stages the package on npm, then keeps running: it checks
-   npm every 10 to 30 minutes, for up to 5 hours 25 minutes, for the new
-   version.
+   npm every 5 minutes, for up to 5 hours 45 minutes, for the new version.
 4. The maintainer reviews the staged package and approves it with 2FA. At its
    next check, the publish job finds the version on npm and creates the
    GitHub release, with that section above GitHub's generated notes.
@@ -57,7 +56,7 @@ Set the `command` input to one of these.
 | -------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | `bump`         | `./CHANGELOG.md` (needs a checkout)      | Sets the `bump` output to `patch`, `minor`, or `major`.                                                                                     | none   |
 | `stamp`        | `./CHANGELOG.md` (needs a checkout)      | Renames the Unreleased heading to `## [<version>] - <today, UTC>`, adds an empty `## [Unreleased]` above it, and adds `[<version>]: <url>`. | `tag`  |
-| `wait-for-npm` | `package.json` at `$GITHUB_SHA`, via API | Sleeps 10, 10, 15, 20, then 30 minutes nine times (325 in all), running `npm view <name>@<version>` after each, until npm serves it.        | `tag`  |
+| `wait-for-npm` | `package.json` at `$GITHUB_SHA`, via API | Every 5 minutes for up to 345 minutes, runs `npm view <name>@<version>` until npm serves it.                                                | `tag`  |
 | `notes`        | `CHANGELOG.md` at `$GITHUB_SHA`, via API | Writes the lines under `## [<version>] - ` to `$RUNNER_TEMP/release-notes.md` and sets the `notes-file` output to that path.                | `tag`  |
 
 - `tag` is the release tag. A leading `v` is dropped to get the version, so
@@ -172,7 +171,7 @@ details below it.
   3. Save the tag's `## [<version>] - ` section of CHANGELOG.md to a file and
      run
      `gh release create <tag> --verify-tag --notes-file <file> --generate-notes`.
-- `wait-for-npm` gave up after 325 minutes: approve the staged package on
+- `wait-for-npm` gave up after 345 minutes: approve the staged package on
   npmjs.com, then re-run the failed job. The tag and the staged package stay
   as they are; no new release is needed.
 - `wait-for-npm` failed with an npm error other than E404: the job log has
@@ -192,7 +191,7 @@ npm test
 stand-in `npm` on `PATH`. `index.mjs` reads the inputs, calls the GitHub API,
 and writes the files and outputs. `index.test.mjs` runs it the way the runner
 does, against a local stand-in for the GitHub API. A successful
-`wait-for-npm` sleeps 10 minutes before its first check, so `index.test.mjs`
+`wait-for-npm` sleeps 5 minutes before its first check, so `index.test.mjs`
 covers only the failures that come before that sleep.
 
 ## Releasing this action
