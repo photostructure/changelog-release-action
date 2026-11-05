@@ -4,6 +4,9 @@
 
 ## [0.2.0] - 2026-11-05
 
+- 🐞 Renamed the action from "Changelog Release" to "Changelog Bump and
+  Release", because GitHub Marketplace rejects a name another action already
+  uses. Workflows refer to the action by its repository, so they need no change.
 - ✨ `wait-for-npm` checks npm every 5 minutes, for up to 345 minutes. It used
   to back off from 10 to 30 minutes between checks and give up after 325, so
   the GitHub release could land up to 30 minutes after the package was

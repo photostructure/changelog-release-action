@@ -1,4 +1,4 @@
-name: Changelog Release
+name: Changelog Bump and Release
 description: Read the version bump from CHANGELOG.md, stamp the release section, wait for npm to serve it, and extract its release notes
 author: PhotoStructure
 
