@@ -1,13 +1,16 @@
 # Changelog
 
-## [Unreleased (minor)]
+## [Unreleased]
+
+## [0.3.0] - 2026-11-06
 
 - ✨ The Unreleased heading can name an exact version, such as
   `## [Unreleased (13.61.0)]`, in place of `patch`, `minor`, or `major`. `bump`
   sets its output to that version, which `npm version` takes unchanged. A
   workflow that checks the `bump` output against `patch|minor|major` must also
   accept `X.Y.Z`. `stamp` fails when the tag is for a different version than
-  the heading names.
+  the heading names. `bump` refuses leading zeros, such as `13.09.0`, because
+  `npm version` turns that into `13.9.0`.
 
 ## [0.2.0] - 2026-11-05
 
@@ -24,5 +27,6 @@
 - ✨ First release: the `bump`, `stamp`, `wait-for-npm`, and `notes` commands,
   taken from the release scripts of PhotoStructure's npm packages.
 
+[0.3.0]: https://github.com/photostructure/changelog-release-action/releases/tag/v0.3.0
 [0.2.0]: https://github.com/photostructure/changelog-release-action/releases/tag/v0.2.0
 [0.1.0]: https://github.com/photostructure/changelog-release-action/releases/tag/v0.1.0

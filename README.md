@@ -94,7 +94,7 @@ jobs:
         with:
           persist-credentials: false
       - id: bump
-        uses: photostructure/changelog-release-action@<sha> # v0.2.0
+        uses: photostructure/changelog-release-action@<sha> # v0.3.0
         with:
           command: bump
 
@@ -105,7 +105,7 @@ jobs:
       # ... checkout, then a step with id "version" that runs
       #   npm version "${{ needs.changelog.outputs.bump }}" --no-git-tag-version --ignore-scripts
       # and writes tag=v<new version> to $GITHUB_OUTPUT ...
-      - uses: photostructure/changelog-release-action@<sha> # v0.2.0
+      - uses: photostructure/changelog-release-action@<sha> # v0.3.0
         with:
           command: stamp
           tag: ${{ steps.version.outputs.tag }}
@@ -125,12 +125,12 @@ github-release:
   permissions:
     contents: write
   steps:
-    - uses: photostructure/changelog-release-action@<sha> # v0.2.0
+    - uses: photostructure/changelog-release-action@<sha> # v0.3.0
       with:
         command: wait-for-npm
         tag: ${{ github.ref_name }}
     - id: notes
-      uses: photostructure/changelog-release-action@<sha> # v0.2.0
+      uses: photostructure/changelog-release-action@<sha> # v0.3.0
       with:
         command: notes
         tag: ${{ github.ref_name }}
@@ -203,8 +203,16 @@ covers only the failures that come before that sleep.
 
 ## Releasing this action
 
-1. Move the notes in `CHANGELOG.md` under `## [X.Y.Z] - YYYY-MM-DD` and add its
-   link definition.
-2. Commit, then push a signed annotated tag `vX.Y.Z`.
-3. Create the GitHub release for the tag with that section as its notes.
-4. Update callers to the tag's commit SHA.
+1. Stamp `CHANGELOG.md` with this action's own `stamp` command:
+   ```sh
+   INPUT_COMMAND=stamp INPUT_TAG=vX.Y.Z GITHUB_SERVER_URL=https://github.com \
+     GITHUB_REPOSITORY=photostructure/changelog-release-action \
+     GITHUB_OUTPUT=/dev/null node index.mjs
+   ```
+2. Change the `# vA.B.C` comments in the Usage examples above to `# vX.Y.Z`.
+3. Commit both as `chore(release): X.Y.Z`, then push a signed annotated tag
+   `vX.Y.Z` on that commit. Callers pin the tag's SHA, so a fix found after
+   tagging goes in the next release, not under the tagged version's heading.
+4. Create the GitHub release for the tag with the `## [X.Y.Z]` section as its
+   notes.
+5. Update callers to the tag's commit SHA.
