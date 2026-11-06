@@ -203,16 +203,19 @@ covers only the failures that come before that sleep.
 
 ## Releasing this action
 
-1. Stamp `CHANGELOG.md` with this action's own `stamp` command:
+1. From the repository root, stamp `CHANGELOG.md` with this action's own
+   `stamp` command:
    ```sh
    INPUT_COMMAND=stamp INPUT_TAG=vX.Y.Z GITHUB_SERVER_URL=https://github.com \
-     GITHUB_REPOSITORY=photostructure/changelog-release-action \
-     GITHUB_OUTPUT=/dev/null node index.mjs
+     GITHUB_REPOSITORY=photostructure/changelog-release-action node index.mjs
    ```
 2. Change the `# vA.B.C` comments in the Usage examples above to `# vX.Y.Z`.
-3. Commit both as `chore(release): X.Y.Z`, then push a signed annotated tag
-   `vX.Y.Z` on that commit. Callers pin the tag's SHA, so a fix found after
-   tagging goes in the next release, not under the tagged version's heading.
+3. Commit both as `chore(release): X.Y.Z`, push `main`, then push a signed
+   annotated tag `vX.Y.Z` on that commit. Callers pin the tagged commit, so a
+   fix found after tagging goes in the next release, not under the tagged
+   version's heading.
 4. Create the GitHub release for the tag with the `## [X.Y.Z]` section as its
    notes.
-5. Update callers to the tag's commit SHA.
+5. Update callers to the tagged commit's SHA, from
+   `git rev-parse vX.Y.Z^{commit}`. Plain `git rev-parse vX.Y.Z` prints the
+   annotated tag object's SHA, which is a different value.
