@@ -10,9 +10,9 @@ const BUMPS = ["patch", "minor", "major"];
 // `npm version 13.09.0` writes 13.9.0, which `stamp` would reject.
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
-// Minutes to sleep before each `npm view`, so the GitHub release follows npm
-// approval by at most this long. The job holds its runner for the whole wait,
-// so checking less often saves nothing.
+// Minutes to sleep between `npm view` checks, so the GitHub release follows
+// npm approval by at most this long. The job holds its runner for the whole
+// wait, so checking less often saves nothing.
 const NPM_CHECK_MINUTES = 5;
 
 // Minutes after which `waitForNpm` starts no new sleep. The last sleep can end
@@ -180,12 +180,13 @@ export function releaseNotes(text, version) {
   return notes.join("\n");
 }
 
-// Sleeps, then asks npm for `spec`, until npm serves it. `view` resolves to
-// { ok, stderr }; `sleep` takes milliseconds; `now` returns epoch milliseconds.
+// Asks npm for `spec`, then sleeps and asks again, until npm serves it. The
+// first check comes before any sleep, so a job re-run after the package was
+// approved finishes at once. `view` resolves to { ok, stderr }; `sleep` takes
+// milliseconds; `now` returns epoch milliseconds.
 export async function waitForNpm(spec, { view, sleep, now }) {
   const deadline = now() + NPM_WAIT_LIMIT_MINUTES * 60_000;
-  while (now() < deadline) {
-    await sleep(NPM_CHECK_MINUTES * 60_000);
+  for (;;) {
     const { ok, stderr } = await view(spec);
     if (ok) return;
     // The annotation shows only the message, so the message carries the fix.
@@ -195,10 +196,13 @@ export async function waitForNpm(spec, { view, sleep, now }) {
         { details: stderr.trimEnd().split("\n") },
       );
     }
+    if (now() >= deadline) {
+      throw new ReleaseError(
+        `npm does not serve ${spec}. Approve the staged package on npmjs.com, then re-run this job.`,
+      );
+    }
+    await sleep(NPM_CHECK_MINUTES * 60_000);
   }
-  throw new ReleaseError(
-    `npm does not serve ${spec}. Approve the staged package on npmjs.com, then re-run this job.`,
-  );
 }
 
 // Runs `npm view <spec> version`, which exits non-zero with E404 in its

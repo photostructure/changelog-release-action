@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [Unreleased (patch)]
+
+- 🐞 `wait-for-npm` checks npm before its first 5-minute sleep, so re-running
+  the GitHub release job after the package was approved finishes at once. It
+  used to sleep 5 minutes before the first check.
 
 ## [0.3.0] - 2026-11-06
 

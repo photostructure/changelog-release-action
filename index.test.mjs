@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import process from "node:process";
 import {
   after,
@@ -268,10 +268,38 @@ describe("notes", () => {
   });
 });
 
-// A successful run sleeps 5 minutes before its first `npm view`, so these
-// cover only what happens before that. changelog.test.mjs covers the loop and
-// npmView.
+// changelog.test.mjs covers the wait loop and npmView.
 describe("wait-for-npm", () => {
+  // The timeout fails this test at 30 seconds if `wait-for-npm` sleeps before
+  // its first `npm view`.
+  test(
+    "finishes at once when npm already serves the version",
+    { timeout: 30_000 },
+    async () => {
+      const bin = mkdtempSync(join(tmpdir(), "changelog-release-action-npm-"));
+      writeFileSync(
+        join(bin, "npm"),
+        '#!/bin/sh\necho "$@" > "$(dirname "$0")/args"\n',
+        { mode: 0o755 },
+      );
+      const path = process.env.PATH;
+      process.env.PATH = `${bin}${delimiter}${path}`;
+      files["package.json"] = JSON.stringify({ name: "@scope/pkg" });
+      try {
+        const r = await run({ command: "wait-for-npm", tag: "v1.3.0" });
+        assert.equal(r.status, 0, r.stderr);
+        assert.equal(
+          readFileSync(join(bin, "args"), "utf8"),
+          "view @scope/pkg@1.3.0 version --prefer-online\n",
+        );
+      } finally {
+        process.env.PATH = path;
+        delete files["package.json"];
+        rmSync(bin, { recursive: true, force: true });
+      }
+    },
+  );
+
   test("needs the tag input", async () => {
     const r = await run({ command: "wait-for-npm" });
     assert.equal(r.status, 1);

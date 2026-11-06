@@ -309,8 +309,15 @@ describe("waitForNpm", () => {
   test("returns once npm serves the version", async () => {
     const f = fakes([NOT_YET, NOT_YET, { ok: true, stderr: "" }]);
     await waitForNpm("pkg@1.2.3", f);
-    assert.deepEqual(f.viewedAt, [5, 10, 15]);
+    assert.deepEqual(f.viewedAt, [0, 5, 10]);
     assert.deepEqual(f.viewed, ["pkg@1.2.3", "pkg@1.2.3", "pkg@1.2.3"]);
+  });
+
+  // A job re-run after the package was approved finishes without waiting.
+  test("returns without sleeping when npm already serves the version", async () => {
+    const f = fakes([{ ok: true, stderr: "" }]);
+    await waitForNpm("pkg@1.2.3", f);
+    assert.deepEqual(f.viewedAt, [0]);
   });
 
   test("fails at once on an error other than E404", async () => {
@@ -328,7 +335,7 @@ describe("waitForNpm", () => {
     assert.equal(f.viewed.length, 2);
   });
 
-  test("checks every 5 minutes until the 345 minutes README.md documents, then tells the maintainer to approve and re-run", async () => {
+  test("checks at once, then every 5 minutes until the 345 minutes README.md documents, then tells the maintainer to approve and re-run", async () => {
     const f = fakes([]);
     await assert.rejects(waitForNpm("pkg@1.2.3", f), (error) => {
       assert.ok(error instanceof ReleaseError);
@@ -340,7 +347,7 @@ describe("waitForNpm", () => {
     });
     assert.deepEqual(
       f.viewedAt,
-      Array.from({ length: 69 }, (_, i) => 5 * (i + 1)),
+      Array.from({ length: 70 }, (_, i) => 5 * i),
     );
   });
 });

@@ -62,7 +62,7 @@ Set the `command` input to one of these.
 | -------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | `bump`         | `./CHANGELOG.md` (needs a checkout)      | Sets the `bump` output to `patch`, `minor`, `major`, or the heading's `X.Y.Z` version.                                                      | none   |
 | `stamp`        | `./CHANGELOG.md` (needs a checkout)      | Renames the Unreleased heading to `## [<version>] - <today, UTC>`, adds an empty `## [Unreleased]` above it, and adds `[<version>]: <url>`. | `tag`  |
-| `wait-for-npm` | `package.json` at `$GITHUB_SHA`, via API | Every 5 minutes for up to 345 minutes, runs `npm view <name>@<version>` until npm serves it.                                                | `tag`  |
+| `wait-for-npm` | `package.json` at `$GITHUB_SHA`, via API | Runs `npm view <name>@<version>` at once, then every 5 minutes for up to 345 minutes, until npm serves it.                                  | `tag`  |
 | `notes`        | `CHANGELOG.md` at `$GITHUB_SHA`, via API | Writes the lines under `## [<version>] - ` to `$RUNNER_TEMP/release-notes.md` and sets the `notes-file` output to that path.                | `tag`  |
 
 - `tag` is the release tag. A leading `v` is dropped to get the version, so
@@ -197,9 +197,9 @@ npm test
 `npm view` call, which `changelog.test.mjs` tests, the last against a
 stand-in `npm` on `PATH`. `index.mjs` reads the inputs, calls the GitHub API,
 and writes the files and outputs. `index.test.mjs` runs it the way the runner
-does, against a local stand-in for the GitHub API. A successful
-`wait-for-npm` sleeps 5 minutes before its first check, so `index.test.mjs`
-covers only the failures that come before that sleep.
+does, against a local stand-in for the GitHub API. Its `wait-for-npm` tests
+end at or before the first `npm view`, because every later check comes after
+a 5-minute sleep.
 
 ## Releasing this action
 
