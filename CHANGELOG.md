@@ -1,6 +1,13 @@
 # Changelog
 
-## [Unreleased]
+## [Unreleased (minor)]
+
+- ✨ The Unreleased heading can name an exact version, such as
+  `## [Unreleased (13.61.0)]`, in place of `patch`, `minor`, or `major`. `bump`
+  sets its output to that version, which `npm version` takes unchanged. A
+  workflow that checks the `bump` output against `patch|minor|major` must also
+  accept `X.Y.Z`. `stamp` fails when the tag is for a different version than
+  the heading names.
 
 ## [0.2.0] - 2026-11-05
 

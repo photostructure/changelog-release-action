@@ -3,7 +3,12 @@
 // writes the files and outputs.
 import { execFile } from "node:child_process";
 
-export const BUMPS = ["patch", "minor", "major"];
+const BUMPS = ["patch", "minor", "major"];
+
+// An exact version in place of a bump, such as 13.61.0. `npm version` takes
+// it the same way it takes a bump. Leading zeros are refused because
+// `npm version 13.09.0` writes 13.9.0, which `stamp` would reject.
+const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 // Minutes to sleep before each `npm view`, so the GitHub release follows npm
 // approval by at most this long. The job holds its runner for the whole wait,
@@ -16,7 +21,7 @@ const NPM_CHECK_MINUTES = 5;
 const NPM_WAIT_LIMIT_MINUTES = 345;
 
 const HEADINGS =
-  '"## [Unreleased (patch)]", "## [Unreleased (minor)]", or "## [Unreleased (major)]"';
+  '"## [Unreleased (patch)]", "## [Unreleased (minor)]", "## [Unreleased (major)]", or "## [Unreleased (X.Y.Z)]" with the exact version';
 
 const EXAMPLE = [
   "Example:",
@@ -48,7 +53,8 @@ function headingFail(line, summary, details = []) {
 }
 
 // Returns the 0-based line index and bump of the one
-// `## [Unreleased (patch|minor|major)]` heading, which must have notes.
+// `## [Unreleased (patch|minor|major|X.Y.Z)]` heading, which must have notes.
+// The bump is an exact version when the heading names one.
 export function readUnreleased(lines) {
   const candidates = [];
   lines.forEach((text, i) => {
@@ -57,7 +63,7 @@ export function readUnreleased(lines) {
   if (candidates.length === 0) {
     headingFail(
       undefined,
-      'CHANGELOG.md has no "## [Unreleased (patch|minor|major)]" heading.',
+      'CHANGELOG.md has no "## [Unreleased (patch|minor|major|X.Y.Z)]" heading.',
       [
         "Add that heading above the newest release and list this release's",
         "changes under it.",
@@ -93,10 +99,10 @@ export function readUnreleased(lines) {
       `The Unreleased heading in CHANGELOG.md does not name a version bump. Change line ${index + 1} to ${HEADINGS}.`,
     );
   }
-  if (!BUMPS.includes(bump)) {
+  if (!BUMPS.includes(bump) && !VERSION.test(bump)) {
     headingFail(
       index + 1,
-      `"${bump}" on line ${index + 1} of CHANGELOG.md is not a version bump. Use patch, minor, or major.`,
+      `"${bump}" on line ${index + 1} of CHANGELOG.md is not a version bump. Use patch, minor, major, or an exact version without leading zeros, such as 1.2.3.`,
     );
   }
   let end = index + 1;
@@ -112,6 +118,7 @@ export function readUnreleased(lines) {
 
 // Renames the Unreleased heading to `## [<version>] - <date>`, adds an empty
 // `## [Unreleased]` above it, and adds a `[<version>]: <url>` definition.
+// A heading that names an exact version must name `version`.
 export function stamp(text, version, date, url) {
   const lines = text.split("\n");
   const existing = lines.findIndex((line) =>
@@ -123,7 +130,13 @@ export function stamp(text, version, date, url) {
       { file: "CHANGELOG.md", line: existing + 1 },
     );
   }
-  const { index } = readUnreleased(lines);
+  const { index, bump } = readUnreleased(lines);
+  if (!BUMPS.includes(bump) && bump !== version) {
+    throw new ReleaseError(
+      `The Unreleased heading on line ${index + 1} of CHANGELOG.md names version ${bump}, but the tag is for ${version}. The release job must pass the bump output to "npm version" and tag the version it prints.`,
+      { file: "CHANGELOG.md", line: index + 1 },
+    );
+  }
   lines.splice(index, 1, "## [Unreleased]", "", `## [${version}] - ${date}`);
   const def = `[${version}]: ${url}`;
   // Definitions follow heading order, so the first one is the newest

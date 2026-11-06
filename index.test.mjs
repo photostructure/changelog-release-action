@@ -91,6 +91,16 @@ describe("bump", () => {
     assert.equal(r.output, "bump=minor\n");
   });
 
+  test("sets the bump output to an exact version", async () => {
+    writeFileSync(
+      join(dir, "CHANGELOG.md"),
+      "## [Unreleased (13.61.0)]\n\n- New.\n",
+    );
+    const r = await run({ command: "bump" });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.output, "bump=13.61.0\n");
+  });
+
   test("annotates CHANGELOG.md and explains the fix", async () => {
     writeFileSync(join(dir, "CHANGELOG.md"), "## [Unreleased]\n\n- New.\n");
     const r = await run({ command: "bump" });

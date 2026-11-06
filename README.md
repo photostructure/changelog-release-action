@@ -4,7 +4,8 @@ A GitHub Action that drives PhotoStructure's npm release workflows from
 `CHANGELOG.md`:
 
 1. The maintainer writes the release notes under
-   `## [Unreleased (patch|minor|major)]`. The heading names the version bump,
+   `## [Unreleased (patch|minor|major)]`, or `## [Unreleased (X.Y.Z)]` when the
+   release must have a particular version. The heading names the version bump,
    so starting a release asks no questions.
 2. The release job bumps the version, then renames that heading to
    `## [X.Y.Z] - YYYY-MM-DD` in the signed release commit.
@@ -41,8 +42,13 @@ the bump in the Unreleased heading:
 - Exactly one heading may mention "Unreleased", in any case or heading level.
   Near misses such as `## Unreleased (minor)` fail with the exact fix rather
   than "no heading".
-- The bump is `patch`, `minor`, or `major`. A bare `## [Unreleased]` names no
-  bump. Between releases that is the right state; releasing from it fails.
+- The bump is `patch`, `minor`, `major`, or an exact `X.Y.Z` version without
+  leading zeros, such as `## [Unreleased (13.61.0)]`. `npm version` takes
+  either form, so a caller can pass the `bump` output to it unchanged. A
+  caller that checks the output against `patch|minor|major` must also accept
+  `X.Y.Z`. `stamp` fails when the heading names a version other than the
+  tag's. A bare `## [Unreleased]` names no bump. Between releases that is the
+  right state; releasing from it fails.
 - The section needs at least one non-blank line before the next `## ` heading.
 - Link definitions (`[1.2.3]: <url>`) are newest first. `stamp` adds the new
   one above the first existing one, or at the end of the file if there are
@@ -54,7 +60,7 @@ Set the `command` input to one of these.
 
 | Command        | Reads                                    | Does                                                                                                                                        | Inputs |
 | -------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `bump`         | `./CHANGELOG.md` (needs a checkout)      | Sets the `bump` output to `patch`, `minor`, or `major`.                                                                                     | none   |
+| `bump`         | `./CHANGELOG.md` (needs a checkout)      | Sets the `bump` output to `patch`, `minor`, `major`, or the heading's `X.Y.Z` version.                                                      | none   |
 | `stamp`        | `./CHANGELOG.md` (needs a checkout)      | Renames the Unreleased heading to `## [<version>] - <today, UTC>`, adds an empty `## [Unreleased]` above it, and adds `[<version>]: <url>`. | `tag`  |
 | `wait-for-npm` | `package.json` at `$GITHUB_SHA`, via API | Every 5 minutes for up to 345 minutes, runs `npm view <name>@<version>` until npm serves it.                                                | `tag`  |
 | `notes`        | `CHANGELOG.md` at `$GITHUB_SHA`, via API | Writes the lines under `## [<version>] - ` to `$RUNNER_TEMP/release-notes.md` and sets the `notes-file` output to that path.                | `tag`  |
@@ -154,9 +160,10 @@ Every failure the maintainer can fix prints a GitHub annotation that says what
 to change, on the CHANGELOG.md line when there is one. The job log has the
 details below it.
 
-- `bump` or `stamp` failed: fix the Unreleased heading, its notes, or a
-  duplicate version heading as the message says, commit to the default
-  branch, and start the release again. Nothing was tagged or published.
+- `bump` or `stamp` failed: fix the Unreleased heading, its notes, a
+  duplicate version heading, or a release job that tags a version other than
+  the heading names, as the message says. Commit to the default branch, and
+  start the release again. Nothing was tagged or published.
 - `wait-for-npm` or `notes` could not read a file: GitHub's response is in
   the log. For a 5xx status, or "Could not reach GitHub" (no response at
   all), re-run the job. For a rate limit, wait as long as the message says,

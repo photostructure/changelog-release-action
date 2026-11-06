@@ -24,7 +24,7 @@ inputs:
 
 outputs:
   bump:
-    description: patch, minor, or major (bump).
+    description: patch, minor, major, or an exact X.Y.Z version (bump). npm version takes any of them.
   notes-file:
     description: Path of the file holding the tag's release notes (notes).
 

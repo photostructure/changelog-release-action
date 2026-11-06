@@ -32,30 +32,53 @@ describe("readUnreleased", () => {
     });
   }
 
+  test("reads an exact version", () => {
+    assert.equal(
+      bumpOf(
+        `# Changelog\n\n## [Unreleased (13.61.0)]\n\n- New.\n\n${RELEASED}`,
+      ),
+      "13.61.0",
+    );
+  });
+
   const failures = [
     [
       "no Unreleased heading",
       RELEASED,
-      'has no "## [Unreleased (patch|minor|major)]" heading',
+      'has no "## [Unreleased (patch|minor|major|X.Y.Z)]" heading',
       undefined,
     ],
     [
       "a heading without a bump",
       `## [Unreleased]\n\n- New.\n\n${RELEASED}`,
-      // The annotation shows only the message, so these three carry the fix.
-      'does not name a version bump. Change line 1 to "## [Unreleased (patch)]", "## [Unreleased (minor)]", or "## [Unreleased (major)]".',
+      // The annotation shows only the message, so these carry the fix.
+      'does not name a version bump. Change line 1 to "## [Unreleased (patch)]", "## [Unreleased (minor)]", "## [Unreleased (major)]", or "## [Unreleased (X.Y.Z)]" with the exact version.',
       1,
     ],
     [
       "an unknown bump",
       `## [Unreleased (huge)]\n\n- New.\n\n${RELEASED}`,
-      '"huge" on line 1 of CHANGELOG.md is not a version bump. Use patch, minor, or major.',
+      '"huge" on line 1 of CHANGELOG.md is not a version bump. Use patch, minor, major, or an exact version without leading zeros, such as 1.2.3.',
+      1,
+    ],
+    [
+      "a version that is not X.Y.Z",
+      `## [Unreleased (v13.61)]\n\n- New.\n\n${RELEASED}`,
+      '"v13.61" on line 1 of CHANGELOG.md is not a version bump. Use patch, minor, major, or an exact version without leading zeros, such as 1.2.3.',
+      1,
+    ],
+    [
+      // `npm version 13.09.0` writes 13.9.0, so the tag would not match the
+      // heading. Checked with npm 11 on a package at 13.5.2.
+      "a version with a leading zero",
+      `## [Unreleased (13.09.0)]\n\n- New.\n\n${RELEASED}`,
+      '"13.09.0" on line 1 of CHANGELOG.md is not a version bump. Use patch, minor, major, or an exact version without leading zeros, such as 1.2.3.',
       1,
     ],
     [
       "a misspelled heading",
       `## Unreleased (minor)\n\n- New.\n\n${RELEASED}`,
-      'is not a valid Unreleased heading. Write it as "## [Unreleased (patch)]", "## [Unreleased (minor)]", or "## [Unreleased (major)]".',
+      'is not a valid Unreleased heading. Write it as "## [Unreleased (patch)]", "## [Unreleased (minor)]", "## [Unreleased (major)]", or "## [Unreleased (X.Y.Z)]" with the exact version.',
       1,
     ],
     [
@@ -106,6 +129,20 @@ describe("stamp", () => {
     );
   });
 
+  test("renames a section that names an exact version", () => {
+    assert.equal(
+      stamp(
+        `## [Unreleased (13.61.0)]\n\n- New.\n\n${RELEASED}`,
+        "13.61.0",
+        "2026-11-02",
+        "https://example.com/v13.61.0",
+      ),
+      "## [Unreleased]\n\n## [13.61.0] - 2026-11-02\n\n- New.\n\n" +
+        "## [1.2.3] - 2026-01-02\n\n- Old fix.\n\n" +
+        "[13.61.0]: https://example.com/v13.61.0\n[1.2.3]: https://example.com/v1.2.3\n",
+    );
+  });
+
   test("appends the link definition when there are none", () => {
     assert.equal(
       stamp(
@@ -150,6 +187,52 @@ describe("stamp", () => {
           "https://example.com/v1.3.0",
         ),
       /does not name a version bump/,
+    );
+  });
+
+  test("refuses a tag for another version than the heading names", () => {
+    assert.throws(
+      () =>
+        stamp(
+          `# Changelog\n\n## [Unreleased (13.61.0)]\n\n- New.\n\n${RELEASED}`,
+          "13.62.0",
+          "2026-11-02",
+          "https://example.com/v13.62.0",
+        ),
+      (error) => {
+        assert.ok(error instanceof ReleaseError);
+        assert.equal(
+          error.message,
+          'The Unreleased heading on line 3 of CHANGELOG.md names version 13.61.0, but the tag is for 13.62.0. The release job must pass the bump output to "npm version" and tag the version it prints.',
+        );
+        assert.equal(error.file, "CHANGELOG.md");
+        assert.equal(error.line, 3);
+        return true;
+      },
+    );
+  });
+
+  test("blames a zero-padded heading, not the tag npm normalized", () => {
+    // `npm version 13.09.0` writes 13.9.0, so the release job tags v13.9.0.
+    // Checked with npm 11 on a package at 13.5.2.
+    assert.throws(
+      () =>
+        stamp(
+          `# Changelog\n\n## [Unreleased (13.09.0)]\n\n- New.\n\n${RELEASED}`,
+          "13.9.0",
+          "2026-11-02",
+          "https://example.com/v13.9.0",
+        ),
+      (error) => {
+        assert.ok(error instanceof ReleaseError);
+        assert.equal(
+          error.message,
+          '"13.09.0" on line 3 of CHANGELOG.md is not a version bump. Use patch, minor, major, or an exact version without leading zeros, such as 1.2.3.',
+        );
+        assert.equal(error.file, "CHANGELOG.md");
+        assert.equal(error.line, 3);
+        return true;
+      },
     );
   });
 });
