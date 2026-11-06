@@ -94,7 +94,7 @@ jobs:
         with:
           persist-credentials: false
       - id: bump
-        uses: photostructure/changelog-release-action@<sha> # v0.3.0
+        uses: photostructure/changelog-release-action@<sha> # v0.3.1
         with:
           command: bump
 
@@ -105,7 +105,7 @@ jobs:
       # ... checkout, then a step with id "version" that runs
       #   npm version "${{ needs.changelog.outputs.bump }}" --no-git-tag-version --ignore-scripts
       # and writes tag=v<new version> to $GITHUB_OUTPUT ...
-      - uses: photostructure/changelog-release-action@<sha> # v0.3.0
+      - uses: photostructure/changelog-release-action@<sha> # v0.3.1
         with:
           command: stamp
           tag: ${{ steps.version.outputs.tag }}
@@ -125,12 +125,12 @@ github-release:
   permissions:
     contents: write
   steps:
-    - uses: photostructure/changelog-release-action@<sha> # v0.3.0
+    - uses: photostructure/changelog-release-action@<sha> # v0.3.1
       with:
         command: wait-for-npm
         tag: ${{ github.ref_name }}
     - id: notes
-      uses: photostructure/changelog-release-action@<sha> # v0.3.0
+      uses: photostructure/changelog-release-action@<sha> # v0.3.1
       with:
         command: notes
         tag: ${{ github.ref_name }}

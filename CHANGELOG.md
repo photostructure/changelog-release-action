@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased (patch)]
+## [Unreleased]
+
+## [0.3.1] - 2026-11-06
 
 - 🐞 `wait-for-npm` checks npm before its first 5-minute sleep, so re-running
   the GitHub release job after the package was approved finishes at once. It
@@ -31,6 +33,7 @@
 - ✨ First release: the `bump`, `stamp`, `wait-for-npm`, and `notes` commands,
   taken from the release scripts of PhotoStructure's npm packages.
 
+[0.3.1]: https://github.com/photostructure/changelog-release-action/releases/tag/v0.3.1
 [0.3.0]: https://github.com/photostructure/changelog-release-action/releases/tag/v0.3.0
 [0.2.0]: https://github.com/photostructure/changelog-release-action/releases/tag/v0.2.0
 [0.1.0]: https://github.com/photostructure/changelog-release-action/releases/tag/v0.1.0
